@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="pt_BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.5">
+    <title>Interpretador Matemático</title>
+
+    <style>
+        :root {
+            --color-main-bg: #1e1e1e;
+            --color-main-font: #d4d4d4;
+            --color-main-border: #323232;
+            --color-button-bg: #464646;
+            --color-button-font: #d4d4d4;
+            --color-group-label-font: #7d7d7d;
+            --color-editor-font: #1e1e1e;
+            --color-editor-bg: #d4d4d4;
+
+            --font-main: sans-serif;
+            --font-size-default: 14px;
+            --font-size-group-label: 10px;
+        }
+
+        * {
+            margin: 0;
+            box-sizing: border-box;
+            font-family: var(--font-main);
+            color: var(--color-main-font);
+        }
+
+        html {
+            background-color: var(--color-main-bg);
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            min-width: 300px;
+            max-width: 600px;
+            box-sizing: content-box;
+            margin: auto;
+        }
+
+        header {
+            margin: auto;
+            padding: 5px;
+            box-sizing: content-box;
+        }
+
+        header>h1 {
+            font-size: large;
+            text-align: center;
+            text-transform: uppercase;
+            height: 100%;
+        }
+
+        button {
+            font-size: var(--font-size-default);
+            padding: 2px 5px;
+            box-sizing: content-box;
+            height: 20px;
+            color: var(--color-button-font);
+            background-color: var(--color-button-bg);
+            border: 0;
+            border-radius: 3px;
+        }
+
+        button:hover {
+            color: var(--color-button-bg);
+            background-color: var(--color-button-font);
+            cursor: pointer;
+        }
+
+        .menu {
+            display: flex;
+            justify-content: flex-start;
+            padding: 5px 10px;
+            box-sizing: content-box;
+            border: 1px solid var(--color-main-border);
+            border-radius: 5px;
+        }
+
+        .editor {
+            display: flex;
+            padding: 5px 10px;
+            box-sizing: content-box;
+            border: 1px solid var(--color-main-border);
+            border-radius: 5px;
+        }
+
+        .editor>textarea {
+            flex: 1;
+            min-width: 150px;
+            margin: 0 12px 0 0;
+            padding: 5px 10px;
+            resize: none;
+            min-height: 300px;
+            box-sizing: border-box;
+            font: var(--font-size-default) monospace;
+            color: var(--color-editor-font);
+            background-color: var(--color-editor-bg);
+            outline: none;
+            border: 0;
+            border-radius: 5px;
+        }
+
+        .line-numbers {
+            flex-shrink: 0;
+            padding: 5px 10px;
+            box-sizing: border-box;
+            color: var(--color-group-label-font);
+            text-align: right;
+            font: var(--font-size-default) monospace;
+            user-select: none;
+        }
+
+        .keyboard {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            gap: 8px;
+            padding: 5px;
+            box-sizing: content-box;
+        }
+
+        .keyboard-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .keyboard-group>span {
+            color: var(--color-group-label-font);
+            font-size: var(--font-size-group-label);
+            text-transform: uppercase;
+        }
+
+        .keyboard-group-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 30px);
+            align-items: start;
+            gap: 4px;
+        }
+
+        .display {
+            padding: 5px 10px;
+            border: 1px solid var(--color-main-border);
+            border-radius: 5px;
+        }
+
+        .display>span {
+            color: var(--color-group-label-font);
+            font: var(--font-size-default) var(--font-main);
+            text-transform: uppercase;
+        }
+
+        #output {
+            margin: 5px 10px;
+            padding: 5px 10px;
+            box-sizing: content-box;
+            border: 0;
+            border-radius: 5px;
+            font: var(--font-size-default);
+            color: var(--color-main-font);
+            background-color: var(--color-main-bg);
+        }
+
+        .output-raw {
+            margin: 5px 10px 0px 10px;
+            padding: 5px 10px;
+            box-sizing: border-box;
+            height: max-content;
+            border: 0;
+            border-top-left-radius: 5px;
+            border-top-right-radius: 5px;
+            font: var(--font-size-default);
+            color: var(--color-editor-font);
+            background-color: var(--color-editor-bg);
+        }
+
+        .output-result {
+            margin: 0px 10px 5px 10px;
+            padding: 5px 10px;
+            white-space: pre-line;
+            box-sizing: border-box;
+            height: max-content;
+            border: 0;
+            border-bottom-left-radius: 5px;
+            border-bottom-right-radius: 5px;
+            font: var(--font-size-default);
+            color: var(--color-button-font);
+            background-color: var(--color-button-bg);
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Interpretador Matemático</h1>
+    </header>
+
+    <div class="menu">
+        <button onclick="executeCode()">Executar</button>
+    </div>
+
+    <div class="editor">
+        <div id="editor-line-numbers" class="line-numbers">1.</div>
+
+        <textarea class="code" id="input" name="input-textarea"></textarea>
+
+        <div class="keyboard">
+            <div class="keyboard-group">
+                <span>Aritméticos</span>
+                <div class="keyboard-group-buttons">
+                    <button type="button" onmousedown="event.preventDefault()" onclick="insertChar('×')">×</button>
+                    <button type="button" onmousedown="event.preventDefault()" onclick="insertChar('÷')">÷</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="display">
+        <span>Console</span>
+        <div id="output"></div>
+    </div>
+</body>
+
+<script>
+    // -----–-------------------------------------------------------------------
+    //      FRONT-END
+    // -----–-------------------------------------------------------------------
+
+    const inputObj = document.getElementById("input");
+    const outputObj = document.getElementById("output");
+    const lineNumbersObj = document.getElementById("editor-line-numbers");
+
+    // Adiciona o caractere na posição atual do cursor no textarea.
+    function insertChar(char) {
+        const inicio = inputObj.selectionStart;
+        const fim = inputObj.selectionEnd;
+
+        inputObj.setRangeText(char, inicio, fim, 'end');
+        updateLineNumbers(inputObj, lineNumbersObj);
+    }
+
+    // Retorna as linhas que devem ser numeradas.
+    // A primeira linha lógica recebe numeração; as quebras visuais ficam em branco.
+    function countLines(element) {
+        const lines = element.value.split('\n');
+        const style = getComputedStyle(element);
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        ctx.font = style.font;
+
+        const lineWidth = element.clientWidth
+            - parseFloat(style.paddingLeft)
+            - parseFloat(style.paddingRight);
+
+        const result = [];
+
+        for (const line of lines) {
+            result.push(true);
+
+            let currentLine = '';
+
+            for (const char of line) {
+                const testLine = currentLine + char;
+
+                if (ctx.measureText(testLine).width > lineWidth) {
+                    result.push(false);
+                    currentLine = char;
+                } else {
+                    currentLine = testLine;
+                }
+            }
+        }
+
+        return result;
+    }
+
+    // Atualiza o conteúdo do numerador de linhas.
+    function updateLineNumbers(inputObj, lineNumbersObj) {
+        const lines = countLines(inputObj);
+
+        let newInnerText = '';
+        let lineNumber = 1;
+
+        for (const shouldNumber of lines) {
+            newInnerText += shouldNumber ? `${lineNumber++}.\n` : '\n';
+        }
+
+        lineNumbersObj.innerText = newInnerText;
+    }
+
+    // Atualiza o conteúdo do numerador de linhsa sempre que algo for digitado.
+    inputObj.addEventListener("input", (event) => {
+        updateLineNumbers(inputObj, lineNumbersObj);
+    })
+
+    // Atualiza o estado do contador assim que carregar a página.
+    updateLineNumbers(inputObj, lineNumbersObj);
+
+
+    // -----–-------------------------------------------------------------------
+    //      INTERPRETADOR
+    // -----–-------------------------------------------------------------------
+
+    let hadError = false;
+
+    function report(line, where, message) {
+        console.error(`[line ${line}] Error ${where}: ${message}`);
+        hadError = true;
+    }
+
+    function error(line, message) {
+        report(line, "", message);
+    }
+
+    const TokenType = {
+        SUM: "Sum",
+        SUB: "Sub",
+        MULT: "Multiplication",
+        DIV: "Division",
+        ASSGN: "Assignment",
+        LPAREN: "LeftParenthesis",
+        RPAREN: "RightParenthesis",
+        NUMBER: "Number",
+        IDENTIFIER: "Identifier",
+        EOF: "EndOfFile",
+    };
+
+    class Token {
+        constructor(tokenType, lexeme, literal, line) {
+            this.type = tokenType;
+            this.lexeme = lexeme;
+            this.literal = literal;
+            this.line = line;
+        }
+
+        toString() {
+            return `Token(${this.type}, "${this.lexeme}", ${this.literal}, ${this.line})`;
+        }
+    }
+
+    class Scanner {
+        constructor(source) {
+            this.source = source;
+            this.tokens = [];
+            this.start = 0;
+            this.current = 0;
+            this.line = 1;
+        }
+
+        advance() {
+            return this.source.charAt(this.current++);
+        }
+
+        addToken(type, literal = null) {
+            let lexeme = this.source.substring(this.start, this.current);
+            this.tokens.push(new Token(type, lexeme, literal, this.line));
+        }
+
+        isAtEnd() {
+            return this.current >= this.source.length;
+        }
+
+        match(expected) {
+            if (this.isAtEnd()) return false;
+            if (this.source.charAt(this.current) !== expected) return false;
+            this.current++;
+            return true;
+        }
+
+        peek() {
+            if (this.isAtEnd()) return '\0';
+            return this.source.charAt(this.current);
+        }
+
+        peekNext() {
+            if (this.current + 1 >= this.source.length) return '\0';
+            return this.source.charAt(this.current + 1);
+        }
+
+        isDigit(c) {
+            return c >= '0' && c <= '9';
+        }
+
+        integer() {
+            this.addToken(
+                TokenType.NUMBER,
+                parseInt(this.source.substring(this.start, this.current), 10),
+            );
+        }
+
+        decimal() {
+            this.addToken(
+                TokenType.NUMBER,
+                Number(this.source.substring(this.start, this.current)),
+            );
+        }
+
+        number() {
+            while (this.isDigit(this.peek())) this.advance();
+
+            if (this.peek() === '.' && this.isDigit(this.peekNext())) {
+                this.advance();
+                while (this.isDigit(this.peek())) this.advance();
+                this.decimal();
+            } else {
+                this.integer();
+            }
+        }
+
+        isAlpha(c) {
+            return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+        }
+
+        isAlphaNumeric(c) {
+            return this.isDigit(c) || this.isAlpha(c);
+        }
+
+        identifier() {
+            while (this.isAlphaNumeric(this.peek())) this.advance();
+            this.addToken(TokenType.IDENTIFIER);
+        }
+
+        scanTokens() {
+            while (!this.isAtEnd()) {
+                this.start = this.current;
+                let c = this.advance();
+
+                switch (c) {
+                    case '(':
+                        this.addToken(TokenType.LPAREN);
+                        break;
+                    case ')':
+                        this.addToken(TokenType.RPAREN);
+                        break;
+                    case '×':
+                        this.addToken(TokenType.MULT);
+                        break;
+                    case '÷':
+                        this.addToken(TokenType.DIV);
+                        break;
+                    case '+':
+                        this.addToken(TokenType.SUM);
+                        break;
+                    case '-':
+                        this.addToken(TokenType.SUB);
+                        break;
+                    case '=':
+                        this.addToken(TokenType.ASSGN);
+                        break;
+                    case ' ':
+                    case '\r':
+                    case '\t': break;
+                    case '\n':
+                        this.line++;
+                        break;
+                    default:
+                        if (this.isDigit(c)) {
+                            this.number();
+                        } else if (this.isAlpha(c)) {
+                            this.identifier();
+                        } else {
+                            error(this.line, "Unexpected character.");
+                        }
+                }
+            }
+
+            this.addToken(TokenType.EOF);
+            return this.tokens;
+        }
+    }
+
+    function* generate(array) {
+        for (const item of array) {
+            yield item;
+        }
+    }
+
+    function executeCode() {
+        const source = inputObj.value;
+        const scanner = new Scanner(source);
+        const tokens = scanner.scanTokens();
+        const lines = source.split('\n');
+        const genTokens = generate(tokens);
+
+        outputObj.innerHTML = '';
+
+        let result = genTokens.next();
+
+        for (const [index, line] of lines.entries()) {
+            const raw = document.createElement('div');
+            raw.className = 'output-raw';
+            raw.textContent = line;
+            outputObj.appendChild(raw);
+
+            const output = document.createElement('div');
+            output.className = 'output-result';
+
+            while (
+                !result.done &&
+                result.value.line === index + 1
+            ) {
+                output.textContent += result.value.toString() + '\n';
+                result = genTokens.next();
+            }
+
+            outputObj.appendChild(output);
+        }
+    }
+
+</script>
+
+</html>
